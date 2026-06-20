@@ -635,6 +635,77 @@ class ActivityStarter {
             ephemeralIntent = new Intent(intent);
             // Don't modify the client's object!
             intent = new Intent(intent);
+            final String oplusFileBrowseAction = intent.getAction();
+            final boolean isOplusFileBrowse = oplusFileBrowseAction != null
+                    && ("oplus.intent.action.filemanager.BROWSER_FILE".equals(oplusFileBrowseAction)
+                    || "oppo.filemanager.intent.action.BROWSER_FILE".equals(oplusFileBrowseAction));
+            // Only honor this for the trusted OPlus camera/gallery apps. The redirect elevates the
+            // caller to SYSTEM_UID to bypass URI permission checks, so it must not be reachable by
+            // an arbitrary app that merely sends the proprietary action.
+            final boolean isTrustedOplusCaller = callingPackage != null
+                    && ("com.oplus.camera".equals(callingPackage)
+                    || "com.oplus.gallery".equals(callingPackage)
+                    || "com.coloros.gallery3d".equals(callingPackage)
+                    || "com.oneplus.gallery".equals(callingPackage));
+            if (isOplusFileBrowse && isTrustedOplusCaller) {
+                String currentDir = intent.getStringExtra("CurrentDir");
+                if (currentDir != null) {
+                    // Extract parent directory if the path points to a file
+                    int lastSlash = currentDir.lastIndexOf('/');
+                    if (lastSlash > 0 && currentDir.substring(lastSlash).contains(".")) {
+                        currentDir = currentDir.substring(0, lastSlash);
+                    }
+
+                    String docId = null;
+                    if (currentDir.startsWith("/storage/emulated/0")) {
+                        String relPath = currentDir.substring("/storage/emulated/0".length());
+                        if (relPath.startsWith("/")) {
+                            relPath = relPath.substring(1);
+                        }
+                        docId = "primary:" + relPath;
+                    } else if (currentDir.startsWith("/storage/")) {
+                        String sub = currentDir.substring("/storage/".length());
+                        int slashIdx = sub.indexOf('/');
+                        if (slashIdx > 0) {
+                            String uuid = sub.substring(0, slashIdx);
+                            String relPath = sub.substring(slashIdx + 1);
+                            docId = uuid + ":" + relPath;
+                        } else {
+                            docId = sub + ":";
+                        }
+                    } else if (currentDir.startsWith("/sdcard")) {
+                        String relPath = currentDir.substring("/sdcard".length());
+                        if (relPath.startsWith("/")) {
+                            relPath = relPath.substring(1);
+                        }
+                        docId = "primary:" + relPath;
+                    }
+
+                    if (docId != null) {
+                        try {
+                            String encodedDocId = java.net.URLEncoder.encode(docId, "UTF-8")
+                                    .replace("+", "%20");
+                            android.net.Uri uri = android.net.Uri.parse(
+                                    "content://com.android.externalstorage.documents/document/" + encodedDocId);
+                            intent.setAction(Intent.ACTION_VIEW);
+                            intent.setDataAndType(uri, "vnd.android.document/directory");
+                            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            intent.setComponent(null);
+
+                            // Elevate privileges to system so we bypass caller URI permission checks
+                            callingUid = android.os.Process.SYSTEM_UID;
+                            callingPackage = "android";
+                            realCallingUid = android.os.Process.SYSTEM_UID;
+                            realCallingPid = android.os.Process.myPid();
+                            callingPid = android.os.Process.myPid();
+                            resolvedCallingUid = android.os.Process.SYSTEM_UID;
+                            resolvedCallingPackage = "android";
+                        } catch (java.io.UnsupportedEncodingException e) {
+                            // ignore
+                        }
+                    }
+                }
+            }
             if (intent.getComponent() != null
                     && !(Intent.ACTION_VIEW.equals(intent.getAction()) && intent.getData() == null)
                     && !Intent.ACTION_INSTALL_INSTANT_APP_PACKAGE.equals(intent.getAction())
