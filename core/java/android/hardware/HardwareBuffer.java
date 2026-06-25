@@ -402,6 +402,23 @@ public final class HardwareBuffer implements Parcelable, AutoCloseable {
         mCloseGuard.open("HardwareBuffer.close");
     }
 
+    /**
+     * Private use only. Called from JNI
+     * (ImageReader$SurfaceImage#nativeGetOplusHardwareBuffer) for the OnePlus camera (APS)
+     * pipeline. No-cleaner variant of {@link #HardwareBuffer(long)}: it intentionally does
+     * NOT register a {@link NativeAllocationRegistry} cleaner. The native object is a
+     * GraphicBufferWrapper whose buffer is shared with APS, which keeps a raw pointer to it
+     * across async frames; an eager GC cleaner could free it mid-use (the hold-to-record
+     * use-after-free). Instead the buffer is freed deterministically in {@link #close()} /
+     * {@link #finalize()} via the native finalizer. Mirrors the stock OnePlus framework's
+     * {@code HardwareBuffer(long, boolean)} constructor; the boolean only selects this overload
+     * and leaves {@link #mCleaner} {@code null}.
+     */
+    private HardwareBuffer(long nativeObject, boolean isOplusLogic) {
+        mNativeObject = nativeObject;
+        mCloseGuard.open("HardwareBuffer.close");
+    }
+
     @Override
     protected void finalize() throws Throwable {
         try {
@@ -523,9 +540,18 @@ public final class HardwareBuffer implements Parcelable, AutoCloseable {
     public void close() {
         if (!isClosed()) {
             mCloseGuard.close();
-            mNativeObject = 0;
-            mCleaner.run();
-            mCleaner = null;
+            if (mCleaner != null) {
+                // Standard path: the NativeAllocationRegistry cleaner owns the native object.
+                mNativeObject = 0;
+                mCleaner.run();
+                mCleaner = null;
+            } else {
+                // OnePlus getOplusHardwareBuffer() no-cleaner path: no cleaner was registered,
+                // so free the native object directly via the same finalizer the registry would
+                // have used. Mirrors stock OnePlus HardwareBuffer.close().
+                NativeAllocationRegistry.applyFreeFunction(nGetNativeFinalizer(), mNativeObject);
+                mNativeObject = 0;
+            }
         }
     }
 

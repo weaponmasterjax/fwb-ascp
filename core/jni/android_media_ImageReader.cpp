@@ -1015,6 +1015,24 @@ static jobject Image_getHardwareBuffer(JNIEnv* env, jobject thiz) {
     // to link against libandroid.so
     return android_hardware_HardwareBuffer_createFromAHardwareBuffer(env, b);
 }
+
+// OnePlus camera (APS) extension. The OnePlus camera SDK reflectively calls
+// ImageReader$SurfaceImage.getOplusHardwareBuffer(); if it is absent the SDK falls back to the
+// standard getHardwareBuffer(), whose HardwareBuffer carries a NativeAllocationRegistry GC
+// cleaner. APS holds a raw pointer to the buffer across async frames during hold-to-record, so
+// the GC can free it mid-use -> use-after-free. This variant returns a HardwareBuffer with no
+// cleaner (lifetime owned by close()/finalize()), matching stock OnePlus behavior.
+static jobject Image_getOplusHardwareBuffer(JNIEnv* env, jobject thiz) {
+    BufferItem* buffer = Image_getBufferItem(env, thiz);
+    if (buffer == nullptr || buffer->mGraphicBuffer == nullptr) {
+        jniThrowException(env, "java/lang/IllegalStateException",
+                "Image is not initialized");
+        return NULL;
+    }
+    ALOGI("getOplusHardwareBuffer: GraphicBuffer=%p (id=%" PRIu64 ") -> no-cleaner HardwareBuffer",
+          buffer->mGraphicBuffer.get(), buffer->mGraphicBuffer->getId());
+    return android_hardware_HardwareBuffer_createOplusFromGraphicBuffer(env, buffer->mGraphicBuffer);
+}
 #endif
 
 } // extern "C"
@@ -1048,6 +1066,8 @@ static const JNINativeMethod gImageMethods[] = {
 #ifdef __ANDROID__
         {"nativeGetHardwareBuffer", "()Landroid/hardware/HardwareBuffer;",
          (void*)Image_getHardwareBuffer},
+        {"nativeGetOplusHardwareBuffer", "()Landroid/hardware/HardwareBuffer;",
+         (void*)Image_getOplusHardwareBuffer},
 #endif
 };
 

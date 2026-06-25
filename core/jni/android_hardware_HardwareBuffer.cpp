@@ -52,6 +52,8 @@ static struct {
     jclass clazz;
     jfieldID mNativeObject;
     jmethodID ctor;
+    // No-cleaner (J,Z) ctor used by the OnePlus camera getOplusHardwareBuffer() path.
+    jmethodID oplusCtor;
 } gHardwareBufferClassInfo;
 
 class GraphicBufferWrapper {
@@ -243,6 +245,31 @@ jobject android_hardware_HardwareBuffer_createFromAHardwareBuffer(
     return hardwareBufferObj;
 }
 
+jobject android_hardware_HardwareBuffer_createOplusFromGraphicBuffer(
+        JNIEnv* env, const sp<GraphicBuffer>& buffer) {
+    // Mirrors stock OnePlus libandroid_runtime's Image_getOplusHardwareBuffer: wrap the
+    // GraphicBuffer (taking a strong ref via the sp<> in GraphicBufferWrapper) and build the
+    // Java HardwareBuffer through the no-cleaner (J,Z) constructor. Unlike
+    // createFromAHardwareBuffer(), this deliberately avoids registering a
+    // NativeAllocationRegistry cleaner: the OnePlus camera (APS) pipeline keeps a raw pointer
+    // to this buffer across async frames, so letting the GC free it eagerly is the
+    // hold-to-record use-after-free. The wrapper is freed deterministically in
+    // HardwareBuffer.close()/finalize() instead.
+    GraphicBufferWrapper* wrapper = new GraphicBufferWrapper(buffer);
+    jobject hardwareBufferObj = env->NewObject(gHardwareBufferClassInfo.clazz,
+            gHardwareBufferClassInfo.oplusCtor, reinterpret_cast<jlong>(wrapper), JNI_TRUE);
+    if (hardwareBufferObj == NULL) {
+        delete wrapper;
+        if (env->ExceptionCheck()) {
+            ALOGE("Could not create OnePlus HardwareBuffer from GraphicBuffer.");
+            LOGE_EX(env);
+            env->ExceptionClear();
+        }
+        return nullptr;
+    }
+    return hardwareBufferObj;
+}
+
 uint32_t android_hardware_HardwareBuffer_convertFromPixelFormat(uint32_t format) {
     return AHardwareBuffer_convertFromPixelFormat(format);
 }
@@ -316,6 +343,8 @@ int register_android_hardware_HardwareBuffer(JNIEnv* env) {
             gHardwareBufferClassInfo.clazz, "mNativeObject", "J");
     gHardwareBufferClassInfo.ctor = GetMethodIDOrDie(env,
             gHardwareBufferClassInfo.clazz, "<init>", "(J)V");
+    gHardwareBufferClassInfo.oplusCtor = GetMethodIDOrDie(env,
+            gHardwareBufferClassInfo.clazz, "<init>", "(JZ)V");
 
     return err;
 }

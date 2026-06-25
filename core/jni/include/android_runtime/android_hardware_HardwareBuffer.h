@@ -32,6 +32,14 @@ extern AHardwareBuffer* android_hardware_HardwareBuffer_getNativeHardwareBuffer(
 extern jobject android_hardware_HardwareBuffer_createFromAHardwareBuffer(
         JNIEnv* env, AHardwareBuffer* hardwareBuffer);
 
+/*
+ * Returns a HardwareBuffer wrapping the given GraphicBuffer using the OnePlus camera
+ * no-cleaner constructor (no NativeAllocationRegistry cleaner is registered; the buffer is
+ * freed in HardwareBuffer.close()/finalize()). Used by ImageReader.getOplusHardwareBuffer().
+ */
+extern jobject android_hardware_HardwareBuffer_createOplusFromGraphicBuffer(
+        JNIEnv* env, const sp<GraphicBuffer>& buffer);
+
 /* Convert from HAL_PIXEL_FORMAT values to AHARDWAREBUFFER_FORMAT values. */
 extern uint32_t android_hardware_HardwareBuffer_convertFromPixelFormat(uint32_t format);
 
