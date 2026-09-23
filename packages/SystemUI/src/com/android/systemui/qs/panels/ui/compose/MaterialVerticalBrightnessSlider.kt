@@ -1,0 +1,423 @@
+/*
+ * Copyright (C) 2024-2026 Lunaris AOSP
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.qs.panels.ui.compose
+
+import android.content.ContentResolver
+import android.content.Context
+import android.database.ContentObserver
+import android.hardware.display.BrightnessInfo
+import android.hardware.display.DisplayManager
+import android.os.Handler
+import android.os.Looper
+import android.os.UserHandle
+import android.provider.Settings
+import android.view.HapticFeedbackConstants
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.android.settingslib.display.BrightnessUtils.GAMMA_SPACE_MAX
+import com.android.settingslib.display.BrightnessUtils.GAMMA_SPACE_MIN
+import com.android.settingslib.display.BrightnessUtils.convertGammaToLinearFloat
+import com.android.settingslib.display.BrightnessUtils.convertLinearToGammaFloat
+import com.android.systemui.res.R
+import com.android.systemui.util.settings.SystemSettings
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
+
+import com.android.systemui.qs.panels.ui.compose.infinitegrid.CustomColorScheme
+import com.android.systemui.qs.panels.ui.compose.infinitegrid.rememberTileHaptic
+import com.android.systemui.volume.dialog.sliders.ui.compose.rememberGradientColorMode
+import com.android.systemui.volume.dialog.sliders.ui.compose.rememberGradientCustomColors
+import com.android.systemui.volume.dialog.sliders.ui.compose.rememberVolumeGradientEnabled
+
+private val CORNER_DEFAULT = 26.dp
+private val CORNER_ROUNDED = 50.dp
+private val CORNER_INNER = 28.dp
+
+@Composable
+fun MaterialVerticalBrightnessSlider(
+    modifier: Modifier = Modifier,
+    sliderStyle: Int = 0,
+    rounded: Boolean = false,
+) {
+    val context = LocalContext.current
+    val view = LocalView.current
+    val scope = rememberCoroutineScope()
+    val cr: ContentResolver = context.contentResolver
+
+    val displayManager = remember {
+        context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+    }
+
+    fun brightnessInfo(): BrightnessInfo? = context.display?.brightnessInfo
+
+    fun linearToFraction(linear: Float): Float {
+        val info = brightnessInfo() ?: return linear.coerceIn(0f, 1f)
+        val gamma = convertLinearToGammaFloat(linear, info.brightnessMinimum, info.brightnessMaximum)
+        val min = GAMMA_SPACE_MIN.toFloat()
+        val max = GAMMA_SPACE_MAX.toFloat()
+        if (max <= min) return 0f
+        return ((gamma - min) / (max - min)).coerceIn(0f, 1f)
+    }
+
+    fun fractionToLinear(fraction: Float): Float {
+        val info = brightnessInfo() ?: return fraction.coerceIn(0f, 1f)
+        val gamma = (GAMMA_SPACE_MIN + fraction.coerceIn(0f, 1f) * (GAMMA_SPACE_MAX - GAMMA_SPACE_MIN))
+            .roundToInt()
+        return convertGammaToLinearFloat(gamma, info.brightnessMinimum, info.brightnessMaximum)
+            .coerceIn(0f, 1f)
+    }
+
+    fun readLinearBrightness(): Float =
+        brightnessInfo()?.brightness?.coerceIn(0f, 1f) ?: run {
+            try {
+                Settings.System.getIntForUser(
+                    cr, Settings.System.SCREEN_BRIGHTNESS, 128, UserHandle.USER_CURRENT
+                ).toFloat() / 255f
+            } catch (_: Exception) { 0.5f }
+        }
+
+    fun readAutoMode(): Boolean = try {
+        Settings.System.getIntForUser(
+            cr, Settings.System.SCREEN_BRIGHTNESS_MODE, 0, UserHandle.USER_CURRENT
+        ) == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+    } catch (_: Exception) { false }
+
+    var linearBrightness by remember { mutableFloatStateOf(readLinearBrightness()) }
+    var autoMode by remember { mutableStateOf(readAutoMode()) }
+    var isDragging by remember { mutableStateOf(false) }
+    var showExpandedPopup by remember { mutableStateOf(false) }
+
+    val targetFraction = linearToFraction(linearBrightness)
+    val hapticEnabled = rememberTileHaptic()
+    var lastHapticStep by remember { mutableIntStateOf(-1) }
+
+    val animFraction by animateFloatAsState(
+        targetValue = targetFraction,
+        animationSpec = if (isDragging)
+            spring(Spring.DampingRatioNoBouncy, Spring.StiffnessHigh)
+        else
+            spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMediumLow),
+        label = "BrightnessFraction",
+    )
+    val currentFraction = if (isDragging) targetFraction else animFraction
+
+    DisposableEffect(Unit) {
+        val handler = Handler(Looper.getMainLooper())
+        val observer = object : ContentObserver(handler) {
+            override fun onChange(selfChange: Boolean) {
+                if (!isDragging) {
+                    linearBrightness = readLinearBrightness()
+                    autoMode = readAutoMode()
+                }
+            }
+        }
+        cr.registerContentObserver(
+            Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS),
+            false, observer, UserHandle.USER_ALL,
+        )
+        cr.registerContentObserver(
+            Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS_MODE),
+            false, observer, UserHandle.USER_ALL,
+        )
+        onDispose { cr.unregisterContentObserver(observer) }
+    }
+
+    val fillColor by animateColorAsState(
+        targetValue = MaterialTheme.colorScheme.primary,
+        animationSpec = tween(300),
+        label = "BrightnessFill",
+    )
+    val iconTint by animateColorAsState(
+        targetValue = MaterialTheme.colorScheme.onPrimary,
+        animationSpec = tween(300),
+        label = "BrightnessIconTint",
+    )
+    val gradientEnabled = rememberVolumeGradientEnabled()
+    val gradientColors = if (rememberGradientColorMode() == 1) {
+        val g = rememberGradientCustomColors()
+        listOf(g.startColor, g.endColor)
+    } else {
+        listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.secondary,
+        )
+    }
+    val fillBrush: Brush? = if (gradientEnabled)
+        Brush.verticalGradient(colors = gradientColors.reversed())
+    else null
+    val iconRes = if (autoMode) R.drawable.ic_qs_brightness_auto_on
+                  else R.drawable.ic_qs_brightness_auto_off
+
+    val effectiveStyle = if (sliderStyle != 0) sliderStyle else if (rounded) 1 else 0
+    val cornerRadius = when (effectiveStyle) {
+        1 -> CORNER_ROUNDED
+        else -> CORNER_DEFAULT
+    }
+    val shape = RoundedCornerShape(cornerRadius)
+    val fillShape = RoundedCornerShape(if (effectiveStyle != 0) CORNER_INNER else CORNER_DEFAULT)
+    val trackBg  = CustomColorScheme.current.qsTileColor
+
+    fun yToLinear(y: Float, heightPx: Int): Float {
+        val fraction = 1f - (y / heightPx).coerceIn(0f, 1f)
+        return fractionToLinear(fraction)
+    }
+
+    fun writeLinearBrightness(value: Float) {
+        scope.launch(Dispatchers.IO) {
+            try {
+                displayManager.setBrightness(
+                    context.display?.displayId ?: return@launch,
+                    value,
+                )
+            } catch (_: Exception) {
+                try {
+                    val legacyInt = (value * 255f).roundToInt().coerceIn(1, 255)
+                    Settings.System.putIntForUser(
+                        cr, Settings.System.SCREEN_BRIGHTNESS,
+                        legacyInt, UserHandle.USER_CURRENT,
+                    )
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
+    val rootModifier = if (effectiveStyle == 2) {
+        modifier.fillMaxHeight()
+    } else {
+        modifier
+            .fillMaxHeight()
+            .clip(shape)
+            .background(trackBg)
+    }
+
+    Box(
+        modifier = rootModifier.pointerInput(Unit) {
+            var longPressJob: Job? = null
+
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                view.parent?.requestDisallowInterceptTouchEvent(true)
+
+                val downLinear = yToLinear(down.position.y, size.height)
+                val downTime = System.currentTimeMillis()
+                var dragging = false
+
+                longPressJob = scope.launch {
+                    delay(400)
+                    if (!isDragging) {
+                        showExpandedPopup = true
+                        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                    }
+                }
+
+                try {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Main)
+                        val ptr = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!ptr.pressed) {
+                            val heldMs = System.currentTimeMillis() - downTime
+                            if (!dragging && heldMs < 500) {
+                                linearBrightness = downLinear
+                                writeLinearBrightness(downLinear)
+                            }
+                            longPressJob?.cancel()
+                            break
+                        }
+
+                        val dragAmt = ptr.position.y - down.position.y
+                        if (!dragging && abs(dragAmt) > viewConfiguration.touchSlop) {
+                            dragging = true
+                            isDragging = true
+                            longPressJob?.cancel()
+                            lastHapticStep = -1
+                        }
+                        if (dragging) {
+                            ptr.consume()
+                            val v = yToLinear(ptr.position.y, size.height)
+                            linearBrightness = v
+                            if (hapticEnabled) {
+                                val frac = linearToFraction(v)
+                                val step = (frac * 20).toInt()
+                                if (step != lastHapticStep) {
+                                    lastHapticStep = step
+                                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                                }
+                            }
+                            writeLinearBrightness(v)
+                        }
+                    }
+                } finally {
+                    longPressJob?.cancel()
+                    isDragging = false
+                    view.parent?.requestDisallowInterceptTouchEvent(false)
+                }
+            }
+        },
+    ) {
+        if (effectiveStyle == 2) {
+            val topWeight = (1f - currentFraction).coerceIn(0.001f, 0.999f)
+            val bottomWeight = currentFraction.coerceIn(0.001f, 0.999f)
+
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // Top unfilled track box
+                Box(
+                    modifier = Modifier
+                        .weight(topWeight)
+                        .fillMaxWidth()
+                        .padding(horizontal = 7.dp)
+                        .clip(
+                            RoundedCornerShape(
+                                topStart = 16.dp,
+                                topEnd = 16.dp,
+                                bottomStart = if (currentFraction >= 0.95f) 16.dp else 4.dp,
+                                bottomEnd = if (currentFraction >= 0.95f) 16.dp else 4.dp,
+                            )
+                        )
+                        .background(trackBg),
+                )
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                // Horizontal protruding divider bar
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 1.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(MaterialTheme.colorScheme.primary),
+                )
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                // Bottom filled track box
+                Box(
+                    modifier = Modifier
+                        .weight(bottomWeight)
+                        .fillMaxWidth()
+                        .padding(horizontal = 7.dp)
+                        .clip(
+                            RoundedCornerShape(
+                                bottomStart = 16.dp,
+                                bottomEnd = 16.dp,
+                                topStart = if (currentFraction <= 0.05f) 16.dp else 4.dp,
+                                topEnd = if (currentFraction <= 0.05f) 16.dp else 4.dp,
+                            )
+                        )
+                        .then(
+                            if (fillBrush != null)
+                                Modifier.background(fillBrush)
+                            else
+                                Modifier.background(fillColor)
+                        ),
+                )
+            }
+        } else {
+            // Standard / Rounded capsule track
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(currentFraction)
+                    .align(Alignment.BottomCenter)
+                    .then(
+                        if (fillBrush != null)
+                            Modifier.background(fillBrush, fillShape)
+                        else
+                            Modifier.background(fillColor, fillShape)
+                    ),
+            )
+        }
+
+        val dynamicIconTint = if (effectiveStyle == 2) {
+            if (currentFraction > 0.15f) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSurface
+        } else {
+            iconTint
+        }
+
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = "Brightness",
+            tint = dynamicIconTint,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 10.dp)
+                .size(20.dp),
+        )
+    }
+
+    if (showExpandedPopup) {
+        val info = brightnessInfo()
+        MaterialBrightnessExpandedPopup(
+            initialBrightness = linearBrightness,
+            brightnessMin = info?.brightnessMinimum ?: 0f,
+            brightnessMax = info?.brightnessMaximum ?: 1f,
+            rounded = rounded,
+            onDismiss = {
+                showExpandedPopup = false
+            },
+            onBrightnessChanged = { value ->
+                linearBrightness = value
+                writeLinearBrightness(value)
+            }
+        )
+    }
+}

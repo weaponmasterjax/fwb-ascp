@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+/**
+ * Copyright (c) 2015, The CyanogenMod Project
+ * Copyright (c) 2017-2021 The LineageOS Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Status bar - icons -->
+    <string name="status_bar_icons_title">Status bar icons</string>
+
+    <!-- Custom QS tiles -->
+    <!-- Ambient display QS tile -->
+    <string name="quick_settings_ambient_display_label">Ambient display</string>
+    <string name="accessibility_quick_settings_ambient_display_off">Ambient display off.</string>
+    <string name="accessibility_quick_settings_ambient_display_on">Ambient display on.</string>
+
+    <!-- AOD QS tile -->
+    <string name="quick_settings_aod_label">AOD</string>
+    <string name="quick_settings_aod_off_powersave_label">AOD off\nBattery saver</string>
+
+    <!-- Autobrightness tile -->
+    <string name="quick_settings_autobrightness_label">Auto brightness</string>
+
+    <!-- Caffeine QS tile -->
+    <string name="quick_settings_caffeine_label">Caffeine</string>
+    <string name="accessibility_quick_settings_caffeine_off">Caffeine off.</string>
+    <string name="accessibility_quick_settings_caffeine_on">Caffeine on.</string>
+
+    <!-- Heads up QS tile -->
+    <string name="quick_settings_heads_up_label">Heads up</string>
+    <string name="accessibility_quick_settings_heads_up_off">Heads up off.</string>
+    <string name="accessibility_quick_settings_heads_up_on">Heads up on.</string>
+
+    <!-- PowerShare QS tile -->
+    <string name="quick_settings_powershare_label">Wireless PowerShare</string>
+    <string name="quick_settings_powershare_off_powersave_label">Wireless PowerShare off\nBattery saver</string>
+    <string name="quick_settings_powershare_off_low_battery_label">Wireless PowerShare off\nBattery too low</string>
+    <string name="quick_settings_powershare_enabled_label">Wireless PowerShare is enabled</string>
+
+    <!-- Sync QS tile -->
+    <string name="quick_settings_sync_label">Sync</string>
+    <string name="accessibility_quick_settings_sync_off">Sync off.</string>
+    <string name="accessibility_quick_settings_sync_on">Sync on.</string>
+
+    <!-- USB tethering QS tile -->
+    <string name="quick_settings_usb_tether_label">USB tethering</string>
+
+    <!-- VPN QS tile -->
+    <string name="quick_settings_vpn_label">VPN</string>
+    <string name="quick_settings_vpn_connect_dialog_title">Connect to\u2026</string>
+    <string name="vpn_credentials_hint">Please enter your credentials for connecting to <xliff:g id="name">%s</xliff:g></string>
+    <string name="vpn_credentials_username">Username</string>
+    <string name="vpn_credentials_password">Password</string>
+    <string name="vpn_credentials_dialog_connect">Connect</string>
+
+    <!-- Advanced restart menu -->
+    <!-- Button to indicate more options -->
+    <string name="global_action_restart_more">More</string>
+    <!-- Button to restart the device, within the Restart Options dialog -->
+    <string name="global_action_restart_system">System</string>
+    <!-- Button to restart the device into recovery mode, within the Restart Options dialog -->
+    <string name="global_action_restart_recovery">Recovery</string>
+    <!-- Button to restart the device into bootloader mode, within the Restart Options dialog -->
+    <string name="global_action_restart_bootloader">Bootloader</string>
+    <!-- Button to restart the device into download mode, within the Restart Options dialog -->
+    <string name="global_action_restart_download">Download</string>
+    <!-- Restart progress dialog. This is shown if the user chooses to restart the device. -->
+    <string name="global_action_restart_progress">Restarting\u2026</string>
+    <!-- Restart to recovery mode progress dialog. This is shown if the user chooses to restart the device. -->
+    <string name="global_action_restart_recovery_progress">Restarting to recovery mode\u2026</string>
+    <!-- Restart to bootloader mode progress dialog. This is shown if the user chooses to restart the device. -->
+    <string name="global_action_restart_bootloader_progress">Restarting to bootloader mode\u2026</string>
+    <!-- Restart to download mode progress dialog. This is shown if the user chooses to restart the device. -->
+    <string name="global_action_restart_download_progress">Restarting to download mode\u2026</string>
+    <!-- Button to restart SystemUI, within the Restart Options dialog -->
+    <string name="global_action_restart_systemui">SystemUI</string>
+    
+    <!-- NFC -->
+    <string name="accessibility_status_bar_nfc">Nfc</string>
+    
+    <!-- DataSwitch Tile -->
+    <string name="qs_data_switch_label">Switch data card</string>
+    <string name="qs_data_switch_sim_label">SIM %d</string>
+    <string name="qs_data_switch_sim_desc">SIM %d is the preferred mobile data SIM</string>
+    <string name="qs_data_switch_sim_transient">Switching\u2026</string>
+
+    <!-- Flashlight Strength -->
+    <string name="flashlight_strength_title">Flashlight Strength</string>
+    <string name="flashlight_strength_turn_off">Turn off</string>
+    <string name="flashlight_strength_turn_on">Turn on</string>
+
+    <!-- Screen record -->
+    <string name="screenrecord_lowquality_label">Lower quality</string>
+    <string name="screenrecord_lowquality_summary">For smaller file size</string>
+    <string name="screenrecord_longer_timeout_switch_label">Larger file size limit</string>
+    <string name="screenrecord_longer_timeout_switch_summary">Limit recording size to 15 GB</string>
+    <string name="screenrecord_skip_time_label">Skip timer</string>
+    <string name="screenrecord_skip_time_summary">Remove the 3 second wait</string>
+    <string name="screenrecord_hevc_switch_label">HEVC encoding</string>
+    <string name="screenrecord_hevc_switch_summary">Use the more efficient HEVC encoder</string>
+
+    <!-- Label for UI element which allows deleting the screenshot [CHAR LIMIT=30] -->
+    <string name="screenshot_delete_label">Delete</string>
+    <!-- Content description indicating that tapping the element will allow deleting the screenshot [CHAR LIMIT=NONE] -->
+    <string name="screenshot_delete_description">Delete screenshot</string>
+
+    <!-- Face unlock -->
+    <string name="face_unlock_recognizing">Recognizing face...</string>
+
+    <!-- Screenshot -->
+    <string name="quick_settings_screenshot_label">Screenshot</string>
+
+    <!-- Dream / Screen saver -->
+    <string name="quick_settings_screensaver_label">Screen saver</string>
+
+    <string name="default_user_name">ASCP OS</string>
+
+    <!-- Sleep Mode -->
+    <string name="quick_settings_sleep_mode_label">Sleep Mode</string>
+
+    <!-- Indication on the keyguard that is shown when the device is charging with a dash charger. Should match keyguard_plugged_in_dash_charging [CHAR LIMIT=40]-->
+    <string name="keyguard_indication_dash_charging_time"><xliff:g id="percentage">%2$s</xliff:g> • Dash Charging (<xliff:g id="charging_time_left" example="4 hours and 2 minutes">%1$s</xliff:g> until full)</string>
+    <string name="keyguard_plugged_in_dash_charging"><xliff:g id="percentage">%s</xliff:g> • Dash Charging</string>
+    <!-- Indication on the keyguard that is shown when the device is charging with a warp charger. Should match keyguard_plugged_in_warp_charging [CHAR LIMIT=40]-->
+    <string name="keyguard_indication_warp_charging_time"><xliff:g id="percentage">%2$s</xliff:g> • Warp Charging (<xliff:g id="charging_time_left" example="4 hours and 2 minutes">%1$s</xliff:g> until full)</string>
+    <string name="keyguard_plugged_in_warp_charging"><xliff:g id="percentage">%s</xliff:g> • Warp Charging</string>
+    <!-- Indication on the keyguard that is shown when the device is charging with a VOOC charger. Should match keyguard_plugged_in_vooc_charging [CHAR LIMIT=40]-->
+    <string name="keyguard_indication_vooc_charging_time"><xliff:g id="percentage">%2$s</xliff:g> • VOOC Charging (<xliff:g id="charging_time_left" example="4 hours and 2 minutes">%1$s</xliff:g> until full)</string>
+    <string name="keyguard_plugged_in_vooc_charging"><xliff:g id="percentage">%s</xliff:g> • VOOC Charging</string>
+    <!-- Indication on the keyguard that is shown when the device is charging with a turbo power charger. Should match keyguard_plugged_in_turbo_charging [CHAR LIMIT=40]-->
+    <string name="keyguard_indication_turbo_power_time"><xliff:g id="percentage">%2$s</xliff:g> • Turbo Charging (<xliff:g id="charging_time_left" example="4 hours and 2 minutes">%1$s</xliff:g> until full)</string>
+    <string name="keyguard_plugged_in_turbo_charging"><xliff:g id="percentage">%s</xliff:g> • Turbo Charging</string>
+
+    <!-- Name of the firewall status bar icon. -->
+    <string name="status_bar_firewall">Firewall</string>
+    <string name="status_bar_firewall_slot" translatable="false">firewall</string>
+
+    <!-- Data usage info in QS footer -->
+    <string name="usage_data">used today</string>
+    <string name="usage_data_weekly">used this week</string>
+    <string name="usage_data_default_suffix">Data</string>
+    <string name="usage_wifi_default_suffix">Wi-Fi</string>
+
+    <!-- Preferred network tile -->
+    <string name="quick_settings_preferred_network_label">Preferred network</string>
+    <string name="quick_settings_preferred_network_unsupported">Unsupported</string>
+
+    <!-- QuickSettings: InternetDialog: Summary for how many devices are connected to the hotspot [CHAR LIMIT=NONE] -->
+    <plurals name="quick_settings_internet_hotspot_summary_num_devices">
+        <item quantity="one">%d device connected</item>
+        <item quantity="other">%d devices connected</item>
+    </plurals>
+
+    <!-- 5G toggle in Internet Dialog -->
+    <string name="enable_fiveg">Enable 5G</string>
+
+    <!-- Sound QS Tile -->
+    <string name="quick_settings_sound_label">Sound</string>
+    <string name="quick_settings_sound_ring">Ring</string>
+    <string name="quick_settings_sound_vibrate">Vibrate</string>
+    <string name="quick_settings_sound_mute">Mute</string>
+
+    <!-- Language toggle tile -->
+    <string name="quick_settings_locale_label">Language</string>
+    <string name="quick_settings_locale_more_locales_toast">Configure multiple languages first</string>
+
+    <!-- Volume panel QS tile -->
+    <string name="quick_settings_volume_panel_label">Volume panel</string>
+
+    <!-- CPUInfo tile -->
+    <string name="quick_settings_cpuinfo_label">CPU Info</string>
+
+    <!-- FPS Info tile -->
+    <string name="quick_settings_fpsinfo_label">FPS Info</string>
+
+    <!-- FPS view text placeholder -->
+    <string name="fps_text_placeholder">FPS: <xliff:g id="fps" example="90">%1$d</xliff:g></string>
+
+    <!-- Smart Pixels -->
+    <string name="quick_settings_smart_pixels_label">Smart Pixels</string>
+    <string name="quick_settings_smart_pixels_on">On</string>
+    <string name="quick_settings_smart_pixels_off">Off</string>
+    <string name="smart_pixels_percent_label">Percent</string>
+    <string name="smart_pixels_percent_format">%d%%</string>
+    
+    <!-- Preferred Network tile -->
+    <string name="quick_settings_preferred_network_settings">Settings</string>
+    
+    <!-- Weather Tile -->
+    <string name="weather_condition_clouds">Cloudy</string>
+    <string name="weather_condition_rain">Rainy</string>
+    <string name="weather_condition_clear">Clear</string>
+    <string name="weather_condition_storm">Stormy</string>
+    <string name="weather_condition_snow">Snowy</string>
+    <string name="weather_condition_wind">Windy</string>
+    <string name="weather_condition_mist">Misty</string>
+    <string name="omnijaws_service_error">Error loading weather data</string>
+    <string name="omnijaws_service_unknown">No weather data</string>
+    <string name="omnijaws_label_default">Weather</string>
+
+    <!-- Label for UI element which writes a clipboard-only screenshot to storage [CHAR LIMIT=30] -->
+    <string name="screenshot_save_to_storage_label">Save to storage</string>
+
+    <!-- Heads up snooze toast -->
+    <string name="heads_up_snooze_message_one_minute"><xliff:g id="string">%s</xliff:g> - Peeking notification are snoozing for 1 minute.</string>
+    <string name="heads_up_snooze_message"><xliff:g id="string">%1$s</xliff:g> - Peeking notifications are snoozing for <xliff:g id="number">%2$d</xliff:g> minutes.</string>
+    
+    <!-- Dynamic Island strings [CHAR LIMIT=NONE] -->
+    <string name="dynamic_island_timer">Timer</string>
+    <string name="dynamic_island_stopwatch">Stopwatch</string>
+    <string name="dynamic_island_alarm">Alarm</string>
+    <string name="dynamic_island_flashlight">Flashlight</string>
+    <string name="dynamic_island_hotspot">Hotspot</string>
+    <string name="dynamic_island_hotspot_active">Hotspot Active</string>
+    <string name="dynamic_island_vpn_active">VPN Active</string>
+    <string name="dynamic_island_screen_recording">Screen Recording</string>
+    <string name="dynamic_island_now_playing">Now Playing</string>
+    <string name="dynamic_island_media_output">Media output</string>
+    <string name="dynamic_island_sound_mode">Sound Mode</string>
+    <string name="dynamic_island_silent">Silent</string>
+    <string name="dynamic_island_vibrate">Vibrate</string>
+    <string name="dynamic_island_ring">Ring</string>
+    <string name="dynamic_island_charging">Charging</string>
+    <string name="dynamic_island_wireless">Wireless</string>
+    <string name="dynamic_island_saver">Saver</string>
+    <string name="dynamic_island_music">Music</string>
+    <string name="dynamic_island_copied">Copied</string>
+    <string name="dynamic_island_copied_feedback">Copied!</string>
+    <string name="dynamic_island_image_copied">Image copied</string>
+    <string name="dynamic_island_copy_image">Copy Image</string>
+    <string name="dynamic_island_clipboard_image_desc">Clipboard image</string>
+    <string name="dynamic_island_image">Image</string>
+    <string name="dynamic_island_url">URL</string>
+    <string name="dynamic_island_dismiss">Dismiss</string>
+    <string name="dynamic_island_open">Open</string>
+    <string name="dynamic_island_stop">Stop</string>
+    <string name="dynamic_island_stop_recording">Stop Recording</string>
+    <string name="dynamic_island_reset">Reset</string>
+    <string name="dynamic_island_clear_all">Clear All</string>
+    <string name="dynamic_island_show_more">Show more</string>
+    <string name="dynamic_island_show_less">Show less</string>
+    <string name="dynamic_island_play">Play</string>
+    <string name="dynamic_island_pause">Pause</string>
+    <string name="dynamic_island_paused">Paused</string>
+    <string name="dynamic_island_saved">Saved</string>
+    <string name="dynamic_island_recording">Recording</string>
+    <string name="dynamic_island_done">Done</string>
+    <string name="dynamic_island_ringing">Ringing</string>
+    <string name="dynamic_island_running">Running</string>
+    <string name="dynamic_island_on">ON</string>
+    <string name="dynamic_island_recents">Recents</string>
+    <string name="dynamic_island_unlocked">Unlocked</string>
+    <string name="dynamic_island_device_unlocked">Device Unlocked</string>
+    <string name="dynamic_island_progress">Progress</string>
+    <string name="dynamic_island_casting_to">Casting to</string>
+    <string name="dynamic_island_camera_mic">Camera &amp; Microphone</string>
+    <string name="dynamic_island_camera">Camera</string>
+    <string name="dynamic_island_microphone">Microphone</string>
+    <string name="dynamic_island_camera_mic_short">Camera &amp; Mic</string>
+    <string name="dynamic_island_hotspot_devices"><xliff:g id="count" example="3">%d</xliff:g> devices</string>
+    <string name="dynamic_island_wireless_charging">Wireless Charging</string>
+    <string name="dynamic_island_until_full">until full</string>
+    <string name="dynamic_island_battery_saver">Battery Saver</string>
+    <string name="dynamic_island_incoming_call">Incoming Call</string>
+    <string name="dynamic_island_connected">Connected</string>
+    <string name="dynamic_island_disconnect">Disconnect</string>
+    <string name="dynamic_island_bluetooth_left_earbud">Left earbud</string>
+    <string name="dynamic_island_bluetooth_right_earbud">Right earbud</string>
+    <string name="dynamic_island_bluetooth_case">Case</string>
+    <string name="dynamic_island_no_devices">No devices</string>
+    <string name="dynamic_island_one_device_connected">1 device connected</string>
+    <string name="dynamic_island_devices_connected"><xliff:g id="count" example="3">%d</xliff:g> devices connected</string>
+    <string name="dynamic_island_vpn_connected">VPN Connected</string>
+    <string name="dynamic_island_secured">Secured</string>
+    <string name="dynamic_island_connecting">Connecting\u2026</string>
+    <string name="dynamic_island_one_device">1 device</string>
+    <string name="dynamic_island_bluetooth_device">Bluetooth device</string>
+    <string name="dynamic_island_apps_count"><xliff:g id="count" example="2">%d</xliff:g> apps</string>
+    <string name="dynamic_island_just_now">Just now</string>
+    <string name="dynamic_island_mins_ago"><xliff:g id="count" example="5">%d</xliff:g>m ago</string>
+    <string name="dynamic_island_hours_ago"><xliff:g id="count" example="2">%d</xliff:g>h ago</string>
+    <string name="dynamic_island_days_ago"><xliff:g id="count" example="3">%d</xliff:g>d ago</string>
+    <string name="dynamic_island_weeks_ago"><xliff:g id="count" example="1">%d</xliff:g>w ago</string>
+    <string name="dynamic_island_resume">Resume</string>
+    <string name="dynamic_island_clipboard">Clipboard</string>
+    <string name="dynamic_island_previous">Previous</string>
+    <string name="dynamic_island_next">Next</string>
+    <string name="dynamic_island_shuffle">Shuffle</string>
+    <string name="dynamic_island_output">Output</string>
+    <string name="dynamic_island_rec_short">Rec</string>
+    <string name="dynamic_island_cast_short">Cast</string>
+    <string name="dynamic_island_active">Active</string>
+    <string name="dynamic_island_biometric">Biometric</string>
+    <string name="dynamic_island_trust">Trust</string>
+    <string name="dynamic_island_alignment">Alignment</string>
+    <string name="dynamic_island_cam_short">Cam</string>
+    <string name="dynamic_island_mic_short">Mic</string>
+    <string name="dynamic_island_recent_apps">Recent Apps</string>
+    <string name="dynamic_island_count_running"><xliff:g id="count" example="3">%d</xliff:g> running</string>
+    <string name="dynamic_island_sports_vs">vs</string>
+    <string name="dynamic_island_sports_live">LIVE</string>
+    <string name="dynamic_island_sports_final">Final</string>
+    <string name="dynamic_island_sports_halftime">Halftime</string>
+    <string name="dynamic_island_sports_upcoming">Upcoming</string>
+    <string name="dynamic_island_call">Call</string>
+    <string name="dynamic_island_kill_app">Kill app</string>
+    <string name="dynamic_island_turn_off">Turn Off</string>
+    <string name="dynamic_island_torch_active">Torch Active</string>
+    <string name="dynamic_island_like">Like</string>
+    <string name="dynamic_island_loop">Loop</string>
+
+    <!-- USB Mode Picker -->
+    <string name="usb_mode_picker_title">Select USB mode</string>
+    <string name="usb_mode_file_transfer">File transfer</string>
+    <string name="usb_mode_tethering">USB tethering</string>
+    <string name="usb_mode_midi">MIDI</string>
+    <string name="usb_mode_photo_transfer">Photo &amp; video transfer</string>
+    <string name="usb_mode_webcam">USB Webcam</string>
+    <string name="usb_mode_charging_only">Charging only</string>
+    <string name="usb_charging_status">USB charging is on</string>
+</resources>
+

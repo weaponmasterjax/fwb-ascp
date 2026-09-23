@@ -1,0 +1,199 @@
+/*
+ * Copyright (C) 2025 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.qs.ui.composable
+
+import androidx.compose.foundation.layout.Arrangement.spacedBy
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleStartEffect
+import com.android.compose.animation.scene.ContentScope
+import com.android.compose.gesture.gesturesDisabled
+import com.android.compose.modifiers.thenIf
+import com.android.systemui.brightness.ui.compose.BrightnessSliderContainer
+import com.android.systemui.brightness.ui.compose.ContainerColors
+import com.android.systemui.compose.modifiers.sysuiResTag
+import com.android.systemui.media.remedia.ui.compose.Media
+import com.android.systemui.media.remedia.ui.compose.MediaPresentationStyle
+import com.android.systemui.plugins.ActivityStarter
+import com.android.systemui.qs.composefragment.ui.GridAnchor
+import com.android.systemui.qs.panels.ui.compose.MaterialControlPanel
+import com.android.systemui.qs.panels.ui.compose.TileGrid
+import com.android.systemui.qs.shared.ui.QuickSettings.Elements
+import com.android.systemui.qs.ui.viewmodel.QuickSettingsContainerViewModel
+import com.android.systemui.statusbar.policy.KeyguardStateController
+import com.android.systemui.res.R
+import kotlinx.coroutines.flow.filterNotNull
+
+@Composable
+fun ContentScope.QuickSettingsContent(
+    viewModel: QuickSettingsContainerViewModel,
+    mediaInRow: Boolean,
+    modifier: Modifier = Modifier,
+    mediaSquishiness: () -> Float = { 1f },
+) {
+    val brightnessSettings = rememberQsBrightnessSettings()
+    QuickSettingsPanelLayout(
+        keyguardStateController = viewModel.keyguardStateController,
+        activityStarter = viewModel.activityStarter,
+        brightness =
+            @Composable {
+                if (viewModel.isBrightnessSliderVisible && brightnessSettings.showSlider != 0) {
+                    var isBrightnessSliderInteractable by remember { mutableStateOf(false) }
+                    LaunchedEffect(Unit) {
+                        snapshotFlow { Elements.QuickSettingsContent.currentAlpha() }
+                            .filterNotNull()
+                            .collect { isBrightnessSliderInteractable = it >= .5f }
+                    }
+                    Element(modifier = Modifier, key = Elements.BrightnessSlider) {
+                        BrightnessSliderContainer(
+                            viewModel.brightnessSliderViewModel,
+                            containerColors =
+                                ContainerColors(
+                                    Color.Transparent,
+                                    ContainerColors.defaultContainerColor,
+                                ),
+                            modifier =
+                                Modifier.padding(
+                                        vertical =
+                                            if (brightnessSettings.showSlider == 2) 0.dp
+                                            else dimensionResource(id = R.dimen.qs_brightness_margin_top)
+                                    )
+                                    .thenIf(!isBrightnessSliderInteractable) {
+                                        Modifier.gesturesDisabled()
+                                    },
+                        )
+                    }
+                }
+            },
+        tiles =
+            @Composable {
+                var listening by remember { mutableStateOf(false) }
+                LifecycleStartEffect(Unit) {
+                    listening = true
+
+                    onStopOrDispose { listening = false }
+                }
+
+                Box {
+                    GridAnchor()
+                    TileGrid(
+                        viewModel.tileGridViewModel,
+                        listening = { listening },
+                        modifier = Modifier.element(Elements.QuickSettingsTiles),
+                    )
+                }
+            },
+        media =
+            @Composable {
+                if (!viewModel.isWidgetPanelEnabled && isAlwaysComposedContentVisible()) {
+                    Element(key = Media.Elements.MediaCarousel, modifier = Modifier) {
+                        Media(
+                            viewModelFactory = viewModel.mediaViewModelFactory,
+                            presentationStyle = MediaPresentationStyle.Default,
+                            behavior = QuickSettingsContainerViewModel.mediaUiBehavior,
+                            onDismissed = viewModel::onMediaSwipeToDismiss,
+                            mediaSquishiness = mediaSquishiness,
+                            location = Media.Location.QS,
+                        )
+                    }
+                } else {
+                    // Add an empty box when QS content is not visible to keep the same number of
+                    // elements.
+                    Box(modifier = Modifier)
+                }
+            },
+        tileViewModels = viewModel.tileGridViewModel.tileViewModels,
+        mediaInRow = mediaInRow,
+        sliderAtTop = brightnessSettings.position == QsBrightnessSliderPosition.TOP,
+        modifier =
+            modifier
+                .element(Elements.QuickSettingsContent)
+                .padding(horizontal = dimensionResource(id = R.dimen.qs_horizontal_margin))
+                .sysuiResTag("quick_settings_panel"),
+    )
+}
+
+@Composable
+private fun QuickSettingsPanelLayout(
+    brightness: @Composable () -> Unit,
+    tiles: @Composable () -> Unit,
+    media: @Composable () -> Unit,
+    mediaInRow: Boolean,
+    sliderAtTop: Boolean = true,
+    modifier: Modifier = Modifier,
+    tileViewModels: List<com.android.systemui.qs.panels.ui.viewmodel.TileViewModel>? = null,
+    keyguardStateController: KeyguardStateController? = null,
+    activityStarter: ActivityStarter? = null,
+) {
+    val spacing = if (sliderAtTop) dimensionResource(id = R.dimen.qs_tile_margin_vertical)
+                  else QuickSettingsShade.Dimensions.VerticalPadding
+    if (mediaInRow) {
+        Column(
+            verticalArrangement = spacedBy(spacing),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = modifier,
+        ) {
+            if (sliderAtTop) brightness()
+            MaterialControlPanel(
+                modifier = Modifier.fillMaxWidth(),
+                tileViewModels = tileViewModels,
+                keyguardStateController = keyguardStateController,
+                activityStarter = activityStarter,
+            )
+            Row(
+                horizontalArrangement = spacedBy(QuickSettingsShade.Dimensions.HorizontalPadding),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(modifier = Modifier.weight(1f)) { tiles() }
+                Box(modifier = Modifier.weight(1f)) { media() }
+            }
+            if (!sliderAtTop) brightness()
+        }
+    } else {
+        Column(
+            verticalArrangement = spacedBy(spacing),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = modifier,
+        ) {
+            if (sliderAtTop) brightness()
+            MaterialControlPanel(
+                modifier = Modifier.fillMaxWidth(),
+                tileViewModels = tileViewModels,
+                keyguardStateController = keyguardStateController,
+                activityStarter = activityStarter,
+            )
+            tiles()
+            media()
+            if (!sliderAtTop) brightness()
+        }
+    }
+}

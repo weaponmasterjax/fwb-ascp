@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SPDX-FileCopyrightText: DerpFest AOSP
+  SPDX-License-Identifier: Apache-2.0
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Upper-left specular band -->
+    <path
+        android:pathData="M-20,0 C60,0 100,40 160,20 C200,8 220,40 200,100 L200,0 Z"
+        android:fillColor="#55FFFFFF" />
+    <!-- Lower-right counter-gloss (very soft) -->
+    <path
+        android:pathData="M0,200 C40,160 80,200 120,180 C180,150 220,200 220,220 L0,220 Z"
+        android:fillColor="#22FFFFFF" />
+</vector>

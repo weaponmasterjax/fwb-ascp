@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Referenced by the smartspace views but defined in other SystemUI values files. -->
+<resources>
+    <string name="accessibility_smartspace_next_page">Next page</string>
+    <string name="accessibility_smartspace_previous_page">Previous page</string>
+</resources>

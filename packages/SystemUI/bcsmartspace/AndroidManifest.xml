@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The sources import com.android.systemui.res.R, so R must generate in that package. -->
+<manifest package="com.android.systemui.res">
+    <application/>
+</manifest>

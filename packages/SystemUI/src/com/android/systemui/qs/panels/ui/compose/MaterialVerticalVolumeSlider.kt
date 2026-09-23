@@ -1,0 +1,398 @@
+/*
+ * Copyright (C) 2026 MistOS
+ * Copyright (C) 2024-2026 Lunaris AOSP
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.android.systemui.qs.panels.ui.compose
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.media.AudioManager
+import android.os.Vibrator
+import android.view.HapticFeedbackConstants
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.android.systemui.res.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+import com.android.systemui.qs.panels.ui.compose.infinitegrid.CustomColorScheme
+import com.android.systemui.qs.panels.ui.compose.infinitegrid.rememberTileHaptic
+import com.android.systemui.volume.dialog.sliders.ui.compose.rememberGradientColorMode
+import com.android.systemui.volume.dialog.sliders.ui.compose.rememberGradientCustomColors
+import com.android.systemui.volume.dialog.sliders.ui.compose.rememberVolumeGradientEnabled
+
+private val CORNER_DEFAULT = 26.dp
+private val CORNER_ROUNDED = 50.dp
+private val CORNER_INNER = 28.dp
+
+@Composable
+fun MaterialVerticalVolumeSlider(
+    modifier: Modifier = Modifier,
+    sliderStyle: Int = 0,
+    rounded: Boolean = false,
+) {
+    val context = LocalContext.current
+    val view = LocalView.current
+    val hapticEnabled = rememberTileHaptic()
+    var lastHapticStep by remember { mutableIntStateOf(-1) }
+    val scope = rememberCoroutineScope()
+
+    val audioManager = remember {
+        context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    }
+    val vibrator = remember {
+        context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+    }
+    val hasVibrator = remember {
+        vibrator?.hasVibrator() == true
+    }
+
+    fun readVolume(): Float {
+        val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).toFloat()
+        val cur = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat()
+        return if (max > 0f) cur / max else 0f
+    }
+
+    fun readRingerMode(): Int = audioManager.ringerMode
+
+    var volumeFraction by remember {
+        mutableFloatStateOf(readVolume())
+    }
+    var ringerMode by remember {
+        mutableIntStateOf(readRingerMode())
+    }
+    var isDragging by remember {
+        mutableStateOf(false)
+    }
+
+    val targetFraction = volumeFraction.coerceIn(0f, 1f)
+
+    val animFraction by animateFloatAsState(
+        targetValue = targetFraction,
+        animationSpec = if (isDragging) {
+            spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessHigh)
+        } else {
+            spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)
+        },
+        label = "VolumeFraction",
+    )
+    val currentFraction = if (isDragging) targetFraction else animFraction
+
+    DisposableEffect(Unit) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                when (intent?.action) {
+                    AudioManager.RINGER_MODE_CHANGED_ACTION -> {
+                        ringerMode = readRingerMode()
+                    }
+                    "android.media.VOLUME_CHANGED_ACTION" -> {
+                        if (!isDragging) volumeFraction = readVolume()
+                    }
+                }
+            }
+        }
+        val filter = IntentFilter().apply {
+            addAction(AudioManager.RINGER_MODE_CHANGED_ACTION)
+            addAction("android.media.VOLUME_CHANGED_ACTION")
+        }
+        context.registerReceiver(receiver, filter)
+        onDispose { context.unregisterReceiver(receiver) }
+    }
+
+    fun cycleRingerMode() {
+        val next = when (ringerMode) {
+            AudioManager.RINGER_MODE_NORMAL  ->
+                if (hasVibrator) AudioManager.RINGER_MODE_VIBRATE
+                else AudioManager.RINGER_MODE_SILENT
+            AudioManager.RINGER_MODE_VIBRATE -> AudioManager.RINGER_MODE_SILENT
+            else -> AudioManager.RINGER_MODE_NORMAL
+        }
+        scope.launch(Dispatchers.IO) {
+            try { audioManager.ringerModeInternal = next } catch (_: Exception) {}
+        }
+        ringerMode = next
+        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+    }
+
+    val fillColor by animateColorAsState(
+        targetValue = when (ringerMode) {
+            AudioManager.RINGER_MODE_SILENT -> MaterialTheme.colorScheme.tertiaryContainer
+            AudioManager.RINGER_MODE_VIBRATE -> MaterialTheme.colorScheme.tertiaryContainer
+            else -> MaterialTheme.colorScheme.primary
+        },
+        animationSpec = tween(350),
+        label = "VolumeFill",
+    )
+    val iconTint by animateColorAsState(
+        targetValue = when (ringerMode) {
+            AudioManager.RINGER_MODE_SILENT -> MaterialTheme.colorScheme.onTertiaryContainer
+            AudioManager.RINGER_MODE_VIBRATE -> MaterialTheme.colorScheme.onTertiaryContainer
+            else -> MaterialTheme.colorScheme.onPrimary
+        },
+        animationSpec = tween(350),
+        label = "VolumeIconTint",
+    )
+    val gradientEnabled = rememberVolumeGradientEnabled()
+    val normalGradientColors = if (rememberGradientColorMode() == 1) {
+        val g = rememberGradientCustomColors()
+        listOf(g.startColor, g.endColor)
+    } else {
+        listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.secondary,
+        )
+    }
+    val vibrateGradientColors = listOf(
+        MaterialTheme.colorScheme.tertiary,
+        MaterialTheme.colorScheme.tertiaryContainer,
+    )
+    val fillBrush: Brush? = when {
+        !gradientEnabled -> null
+        ringerMode == AudioManager.RINGER_MODE_NORMAL ->
+            Brush.verticalGradient(colors = normalGradientColors.reversed())
+        ringerMode == AudioManager.RINGER_MODE_VIBRATE ->
+            Brush.verticalGradient(colors = vibrateGradientColors.reversed())
+        else -> null
+    }
+
+    val iconRes = when (ringerMode) {
+        AudioManager.RINGER_MODE_SILENT -> R.drawable.ic_volume_off
+        AudioManager.RINGER_MODE_VIBRATE -> R.drawable.ic_volume_ringer_vibrate
+        else -> R.drawable.ic_volume_ringer
+    }
+
+    val tileColor = CustomColorScheme.current.qsTileColor
+    val trackBg = tileColor
+    val effectiveStyle = if (sliderStyle != 0) sliderStyle else if (rounded) 1 else 0
+    val cornerRadius = when (effectiveStyle) {
+        1 -> CORNER_ROUNDED
+        else -> CORNER_DEFAULT
+    }
+    val shape = RoundedCornerShape(cornerRadius)
+    val fillShape = RoundedCornerShape(if (effectiveStyle != 0) CORNER_INNER else CORNER_DEFAULT)
+
+    val rootModifier = if (effectiveStyle == 2) {
+        modifier.fillMaxHeight()
+    } else {
+        modifier
+            .fillMaxHeight()
+            .clip(shape)
+            .background(trackBg)
+    }
+
+    Box(
+        modifier = rootModifier
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    view.parent?.requestDisallowInterceptTouchEvent(true)
+                    waitForUpOrCancellation()
+                    view.parent?.requestDisallowInterceptTouchEvent(false)
+                }
+            }
+            .pointerInput(Unit) {
+                detectVerticalDragGestures(
+                    onDragStart = {
+                        isDragging = true
+                        lastHapticStep = -1
+                    },
+                    onDragEnd = { isDragging = false },
+                    onDragCancel = { isDragging = false },
+                    onVerticalDrag = { change, _ ->
+                        change.consume()
+                        val fraction = 1f - (change.position.y / size.height).coerceIn(0f, 1f)
+                        volumeFraction = fraction
+                        if (hapticEnabled) {
+                            val step = (fraction * 20).toInt()
+                            if (step != lastHapticStep) {
+                                lastHapticStep = step
+                                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                            }
+                        }
+                        val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                        val target = (fraction * maxVol).toInt().coerceIn(0, maxVol)
+                        scope.launch(Dispatchers.IO) {
+                            try { audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0) }
+                            catch (_: Exception) {}
+                        }
+                    },
+                )
+            }
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { offset ->
+                        val fraction = 1f - (offset.y / size.height).coerceIn(0f, 1f)
+                        volumeFraction = fraction
+                        val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                        val target = (fraction * maxVol).toInt().coerceIn(0, maxVol)
+                        scope.launch(Dispatchers.IO) {
+                            try { audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0) }
+                            catch (_: Exception) {}
+                        }
+                    },
+                    onLongPress = { cycleRingerMode() },
+                )
+            },
+    ) {
+        if (effectiveStyle == 2) {
+            val topWeight = (1f - currentFraction).coerceIn(0.001f, 0.999f)
+            val bottomWeight = currentFraction.coerceIn(0.001f, 0.999f)
+
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // Top unfilled track box
+                Box(
+                    modifier = Modifier
+                        .weight(topWeight)
+                        .fillMaxWidth()
+                        .padding(horizontal = 7.dp)
+                        .clip(
+                            RoundedCornerShape(
+                                topStart = 16.dp,
+                                topEnd = 16.dp,
+                                bottomStart = if (currentFraction >= 0.95f) 16.dp else 4.dp,
+                                bottomEnd = if (currentFraction >= 0.95f) 16.dp else 4.dp,
+                            )
+                        )
+                        .background(trackBg),
+                )
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                // Horizontal protruding divider bar
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 1.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(
+                            when (ringerMode) {
+                                AudioManager.RINGER_MODE_SILENT, AudioManager.RINGER_MODE_VIBRATE ->
+                                    MaterialTheme.colorScheme.tertiary
+                                else -> MaterialTheme.colorScheme.primary
+                            }
+                        ),
+                )
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                // Bottom filled track box
+                Box(
+                    modifier = Modifier
+                        .weight(bottomWeight)
+                        .fillMaxWidth()
+                        .padding(horizontal = 7.dp)
+                        .clip(
+                            RoundedCornerShape(
+                                bottomStart = 16.dp,
+                                bottomEnd = 16.dp,
+                                topStart = if (currentFraction <= 0.05f) 16.dp else 4.dp,
+                                topEnd = if (currentFraction <= 0.05f) 16.dp else 4.dp,
+                            )
+                        )
+                        .then(
+                            if (fillBrush != null)
+                                Modifier.background(fillBrush)
+                            else
+                                Modifier.background(fillColor)
+                        ),
+                )
+            }
+        } else {
+            // Standard / Rounded capsule track
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(currentFraction)
+                    .align(Alignment.BottomCenter)
+                    .then(
+                        if (fillBrush != null)
+                            Modifier.background(fillBrush, fillShape)
+                        else
+                            Modifier.background(fillColor, fillShape)
+                    ),
+            )
+        }
+
+        val dynamicIconTint = if (effectiveStyle == 2) {
+            if (currentFraction > 0.15f) {
+                when (ringerMode) {
+                    AudioManager.RINGER_MODE_SILENT, AudioManager.RINGER_MODE_VIBRATE ->
+                        MaterialTheme.colorScheme.onTertiaryContainer
+                    else -> MaterialTheme.colorScheme.onPrimary
+                }
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
+        } else {
+            iconTint
+        }
+
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = "Volume",
+            tint = dynamicIconTint,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 10.dp)
+                .size(20.dp),
+        )
+    }
+}

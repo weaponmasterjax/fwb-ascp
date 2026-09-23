@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: 2024-2026 ASCP OS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Define device configs on boot -->
+    <string-array name="global_device_configs_override" translatable="false">
+    </string-array>
+    <string-array name="device_configs_override" translatable="false">
+    </string-array>
+
+    <!-- Paths to the libraries that contain device specific key handlers -->
+    <string-array name="config_deviceKeyHandlerLibs" translatable="false">
+    </string-array>
+
+    <!-- Names of the key handler classes -->
+    <string-array name="config_deviceKeyHandlerClasses" translatable="false">
+    </string-array>
+
+    <!-- Should we listen for fingerprints when the screen is off?  Devices
+         with a rear-mounted sensor want this, but certain devices have
+         the sensor embedded in the power key and listening all the time
+         causes a poor experience. -->
+    <bool name="config_fingerprintWakeAndUnlock">true</bool>
+
+    <!-- Whether to cleanup fingerprints upon connection to the daemon and when user switches -->
+    <bool name="config_cleanupUnusedFingerprints">true</bool>
+
+    <!-- The list of components which should be automatically disabled for a specific device.
+     Note: this MUST not be used to randomly disable components, ask for approval first! -->
+    <string-array name="config_deviceDisabledComponents" translatable="false">
+    </string-array>
+
+    <!-- The list of components which should be automatically disabled for all devices. -->
+    <string-array name="config_globallyDisabledComponents" translatable="false">
+    </string-array>
+
+    <!-- The list of components which should be forced to be enabled. -->
+    <string-array name="config_forceEnabledComponents" translatable="false">
+    </string-array>
+
+   <!-- Defines the actions shown in advanced reboot submenu -->
+   <string-array name="config_restartActionsList">
+       <item>restart</item>
+       <item>restart_systemui</item>
+       <item>restart_recovery</item>
+       <item>restart_bootloader</item>
+   </string-array>
+
+   <!-- Whether to allow process with media UID to access CameraServiceProxy -->
+   <bool name="config_allowMediaUidForCameraServiceProxy">false</bool>
+   
+    <!-- Whether device has an alert slider. -->
+    <bool name="config_hasAlertSlider">false</bool>
+
+    <!-- PowerOffAlarmService -->
+    <bool name="config_powerOffAlarmEnabled">false</bool>
+
+    <!-- Whether to force enable multi resolution configuration for camera -->
+    <bool name="config_forceMultiResolution">false</bool>
+
+    <!-- Array of:
+        - Path to fast charging status file
+        - Delimiter ";"
+        - Value if fast charging is active
+        Used to detect whether an oem fast charger is active
+        Example: <item>/sys/class/power_supply/battery/fastchg_status;1</item>
+    -->
+    <string-array name="config_oemFastChargerStatusPaths" translatable="false">
+    </string-array>
+
+    <!-- CPU temperature -->
+    <string name="config_cpu_temp_path">/sys/class/thermal/thermal_zone0/temp</string>
+    <integer name="config_sysCPUTempMultiplier">1</integer>
+    <integer name="config_sysBatteryTempMultiplier">1</integer>
+
+    <!-- Defines the sysfs attribute path used by pocket bridge
+         to communicate pocket state to the pocket judge kernel driver. -->
+    <string name="config_pocketBridgeSysfsInpocket"></string>
+
+    <!-- Pocket Lock -->
+    <bool name="config_pocketModeSupported">false</bool>
+    <bool name="config_pocketUseLightSensor">false</bool>
+
+    <!-- Defines custom OEM sensor for pocket detection. -->
+    <string name="config_pocketJudgeVendorSensorName"></string>
+    <item name="config_pocketJudgeVendorSensorValue" format="float" type="dimen">1.0</item>
+    <string name="config_pocketJudgeVendorProximitySensorName"></string>
+
+    <!-- Whether device has dash charging support -->
+    <bool name="config_hasDashCharger">false</bool>
+    <!-- Whether device has warp charging support -->
+    <bool name="config_hasWarpCharger">false</bool>
+    <!-- Whether device has VOOC charging support -->
+    <bool name="config_hasVoocCharger">false</bool>
+    <!-- Whether device has turbo power charging support -->
+    <bool name="config_hasTurboPowerCharger">false</bool>
+    <!-- Path to fast charging status file to detect whether an oem fast charger is active -->
+    <string name="config_oemFastChargerStatusPath" translatable="false"></string>
+    <!-- Path to fast charging status file to detect whether an oem fast charger is active -->
+    <string name="config_oemFastChargerStatusPath2" translatable="false"></string>
+    <!-- Expected value from fast charging status file  -->
+    <string name="config_oemFastChargerStatusValue" translatable="false">1</string>
+
+    <!-- Display color inversion availability -->
+    <bool name="config_displayInversionAvailable">true</bool>
+
+    <!-- Smart 5G -->
+    <bool name="config_supportSmart5G">false</bool>
+    
+    <!-- Build properties from a GMS certified device against current platform SPL level -->
+    <string-array name="config_certifiedBuildProperties" translatable="false">
+      <!--
+        Each entry must be of the format
+            FIELD:value
+        with the field belonging to android.os.Build or android.os.Build.VERSION class.
+        Example:
+        <item>BRAND:foo</item>
+        <item>DEVICE:bar</item>
+        <item>FINGERPRINT:foo/bar/bar:1.0/lorem/ipsum:dolor/sit-amet</item>
+        <item>VERSION.RELEASE:1.0</item>
+      -->
+    </string-array>
+
+    <!-- Build fingerprint from stock ROM -->
+    <string name="config_stockFingerprint" translatable="false"></string>
+
+    <!-- Device model (Build.MODEL) to spoof for netflix, if not empty -->
+    <string name="config_netflixSpoofModel" translatable="false"></string>
+
+   <!-- API URL to fetch PIF from -->
+   <string name="config_pifUpdateUrl" translatable="false">https://raw.githubusercontent.com/Pixelify-AOSP/android_vendor_gms_spoof/refs/heads/17/gms_certified_props.json</string>
+</resources>

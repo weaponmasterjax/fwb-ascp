@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Card colours the closed bcsmartspace module provides. Values taken from
+     NexusLauncherRelease res/color/bg_card_*.xml. -->
+<resources>
+    <color name="bg_card_solid">#66000000</color>
+</resources>
