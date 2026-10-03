@@ -8276,6 +8276,14 @@ public final class Settings {
             Secure.WIFI_WATCHDOG_PING_TIMEOUT_MS;
 
         /**
+         * Whether or not to vibrate when a touchscreen gesture is detected
+         * @hide
+         */
+        @Readable
+        public static final String TOUCHSCREEN_GESTURE_HAPTIC_FEEDBACK =
+                "touchscreen_gesture_haptic_feedback";
+
+        /**
          * Checks if the specified app can modify system settings. As of API
          * level 23, an app cannot modify system settings unless it declares the
          * {@link android.Manifest.permission#WRITE_SETTINGS}
