@@ -26,7 +26,10 @@ import android.util.Log;
 import com.android.internal.annotations.VisibleForTesting;
 
 import com.android.internal.custom.app.LineageContextConstants;
+import com.android.internal.custom.hardware.AIDLHelper;
 import com.android.internal.custom.hardware.HIDLHelper;
+
+import vendor.lineage.touch.ITouchscreenGesture;
 
 import java.lang.IllegalArgumentException;
 import java.lang.reflect.Field;
@@ -50,6 +53,12 @@ public final class LineageHardwareManager {
     // fields, as they might be used via reflection. When the @Keep annotation in
     // the support library is properly handled in the platform, we should change this.
 
+    /**
+     * Touchscreen gesture
+     */
+    @VisibleForTesting
+    public static final int FEATURE_TOUCHSCREEN_GESTURES = 0x80000;
+
     private static final List<Integer> BOOLEAN_FEATURES = Arrays.asList(
     );
 
@@ -60,6 +69,9 @@ public final class LineageHardwareManager {
 
     // HIDL hals
     private HashMap<Integer, IBase> mHIDLMap = new HashMap<Integer, IBase>();
+
+    // AIDL hals
+    private HashMap<Integer, IBinder> mAIDLMap = new HashMap<Integer, IBinder>();
 
     /**
      * @hide to prevent subclassing from outside of the framework
@@ -113,7 +125,23 @@ public final class LineageHardwareManager {
      * @return true if the feature is supported, false otherwise.
      */
     public boolean isSupported(int feature) {
-        return isSupportedHIDL(feature) || isSupportedLegacy(feature);
+        return isSupportedHIDL(feature) || isSupportedAIDL(feature) || isSupportedLegacy(feature);
+    }
+
+    private boolean isSupportedAIDL(int feature) {
+        if (!mAIDLMap.containsKey(feature)) {
+            mAIDLMap.put(feature, getAIDLService(feature));
+        }
+        return mAIDLMap.get(feature) != null;
+    }
+
+    private IBinder getAIDLService(int feature) {
+        switch (feature) {
+            case FEATURE_TOUCHSCREEN_GESTURES:
+                return ServiceManager.waitForDeclaredService(
+                        ITouchscreenGesture.DESCRIPTOR + "/default");
+        }
+        return null;
     }
 
     private boolean isSupportedHIDL(int feature) {
@@ -217,6 +245,38 @@ public final class LineageHardwareManager {
         return false;
     }
 
+
+    /**
+     * @return a list of available touchscreen gestures on the devices
+     */
+    public TouchscreenGesture[] getTouchscreenGestures() {
+        try {
+            if (isSupportedAIDL(FEATURE_TOUCHSCREEN_GESTURES)) {
+                ITouchscreenGesture touchscreenGesture = ITouchscreenGesture.Stub.asInterface(
+                        mAIDLMap.get(FEATURE_TOUCHSCREEN_GESTURES));
+                return AIDLHelper.fromAIDLGestures(touchscreenGesture.getSupportedGestures());
+            }
+        } catch (Exception e) {
+        }
+        return null;
+    }
+
+    /**
+     * @return true if setting the activation status was successful
+     */
+    public boolean setTouchscreenGestureEnabled(
+            TouchscreenGesture gesture, boolean state) {
+        try {
+            if (isSupportedAIDL(FEATURE_TOUCHSCREEN_GESTURES)) {
+                ITouchscreenGesture touchscreenGesture = ITouchscreenGesture.Stub.asInterface(
+                        mAIDLMap.get(FEATURE_TOUCHSCREEN_GESTURES));
+                touchscreenGesture.setGestureEnabled(AIDLHelper.toAIDLGesture(gesture), state);
+                return true;
+            }
+        } catch (Exception e) {
+        }
+        return false;
+    }
 
     /**
      * @return true if service is valid
